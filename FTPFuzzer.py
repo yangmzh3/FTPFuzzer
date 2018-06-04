@@ -1,6 +1,7 @@
 #/usr/bin/env python
 # -*- coding: UTF-8 -*-
 
+
 #######################################
 # Filename : FTPFuzzer.py
 # Auther   : yangmzh3
@@ -9,34 +10,16 @@
 #######################################
 
 
-import socket
 import argparse
 import sys
 
 
-SOCKET_TIME_OUT = 1
-SOCKET_RECEIVE_LENGTH = 1024
+#import command.py
+import command
 
 
-def ACCT(hostname, port, username, password):
-	try:
-		s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-		s.settimeout(SOCKET_TIME_OUT)
-		s.connect((hostname, port))
-		response = s.recv(SOCKET_RECEIVE_LENGTH)
-		print(response + "\r\n")
-
-		s.send("USER " + username + "\r\n")
-		response = s.recv(SOCKET_RECEIVE_LENGTH)
-		print(response + "\r\n")
-
-		s.send("PASS " + password + "\r\n")
-		response = s.recv(SOCKET_RECEIVE_LENGTH)
-		print(response + "\r\n")
-	
-	except:
-		errorMessage = "ERROR!\r\n"###
-		print(errorMessage)###
+SEED = 65535
+AMOUNT = 100
 
 
 def main():
@@ -47,17 +30,23 @@ def main():
 		required = True, help = "hostname of FTP server")
 	
 	parser.add_argument("--port",
-		required = True, type = int, help = "port of FTP server")
+		type = int, default = 21, help = "port of FTP server")
 	
 	parser.add_argument("--username",
 		required = True, help = "required username")
 	
 	parser.add_argument("--password",
 		required = True, help = "required password")
+
+	parser.add_argument("--seed",
+		type = int, default = SEED, help = "random seed")
+
+	parser.add_argument("--amount",
+		type = int, default = AMOUNT, help = "amount of mutation")
 	
 	args = parser.parse_args()
 
-	ACCT(args.hostname, args.port, args.username, args.password)
+	command.CDUP(args.hostname, args.port, args.username, args.password, args.seed, args.amount)
 	sys.exit()
 
 
