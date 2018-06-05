@@ -14,23 +14,50 @@ import random
 import math
 
 
-def calculate_length(seed):
+def generate_random_numbers(amount):
+	pass
+
+
+def calculate_loop_length(seed):
 	random.seed(seed)
-	random.random()
-	length = int(round(random.random() * 256.0))
+	length = int(round(random.random() * 128.0))
 	if length == 0:
 		length += 1
-	while 256 % length == 0:
+	while 128 % length == 0:
 		length += 1
 	return length
 
 
-def flip_bit(standard_cmd, seed, amount):
+def generate_insert_buffer_data(seed, amount, lengths):
+	#mutate ascii length
+	mutate_ascii_length = calculate_loop_length(seed)
+	
+	#mutate ascii char, just assign it the same as length in the begining
+	mutate_ascii = mutate_ascii_length
+
+	insert_buffer_data = []
+	i = 0################################
+	while i < amount:
+		insert_length = lengths[i % len(lengths)]
+		buffer_data = ""
+
+		j = 0############################
+		while j < insert_length:
+			buffer_data += chr(mutate_ascii % 128)
+			mutate_ascii += mutate_ascii_length
+			j += 1
+		
+		insert_buffer_data.append(buffer_data)
+		i += 1
+	return insert_buffer_data
+
+
+def bit_flip(standard_cmd, seed, amount):
 	#mutate position of cmd
 	mutate_position = 0
 
 	#mutate ascii length of loop
-	mutate_ascii_length = calculate_length(seed)
+	mutate_ascii_length = calculate_loop_length(seed)
 
 	#mutate startup position's ascii value, just assign it the same as length of loop
 	mutate_ascii = mutate_ascii_length
@@ -38,14 +65,15 @@ def flip_bit(standard_cmd, seed, amount):
 	mutate_cmd = []
 	
 	while amount > 0:
-		mutate_position = mutate_position % len(standard_cmd)######    %=!!!
-		mutate_ascii = mutate_ascii % 256
+		mutate_position %= len(standard_cmd)
+		mutate_ascii %= 128
 
 		#ord("a") == 97
 		#chr(97) == "a"
 		cmd_head = standard_cmd[0 : mutate_position]
-		cmd_tail = standard_cmd[(mutate_position + 1) : -1]
-		mutate_char = chr((ord(standard_cmd[mutate_position]) + mutate_ascii) % 256)
+		cmd_tail = standard_cmd[(mutate_position + 1) : len(standard_cmd)]
+		mutate_char = chr((ord(standard_cmd[mutate_position]) + mutate_ascii) % 128)
+		print(mutate_char)##################
 		mutate_cmd.append(cmd_head + mutate_char + cmd_tail)
 		
 		mutate_position += 1
@@ -54,12 +82,13 @@ def flip_bit(standard_cmd, seed, amount):
 	return mutate_cmd
 
 
-def add_buffer(standard_cmd, seed, amount):
+def buffer_overflow(standard_cmd, seed, amount):
 	random.seed(seed)
-	pass
+	insert_length = [8, 16, 32, 64, 128, 256, 512, 1024, 2048, 4096]
+	s = generate_insert_buffer_data(seed, amount, insert_length)
+	
 
-
-def add_format_string(standard_cmd, seed, amount):
+def format_string(standard_cmd, seed, amount):
 	random.seed(seed)
 	pass
 
