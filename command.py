@@ -19,7 +19,7 @@ import sys
 import mutate
 
 
-SOCKET_TIME_OUT = 3
+SOCKET_TIME_OUT = 2
 SOCKET_RECEIVE_LENGTH = 1024
 SLEEP_TIME = 0.0
 
@@ -37,12 +37,9 @@ def login(hostname, port, username, password):
 	try:
 		s.send("USER" + " " + username + "\r\n")
 		response = s.recv(SOCKET_RECEIVE_LENGTH)
-
 		s.send("PASS" + " " + password + "\r\n")
 		response = s.recv(SOCKET_RECEIVE_LENGTH)
-		
 		return s
-	
 	except:
 		print("[-] Login failed!")
 		return
@@ -50,46 +47,64 @@ def login(hostname, port, username, password):
 
 def CDUP(hostname, port, username, password, seed, amount):
 	s = login(hostname, port, username, password)
-	standard_cmd = "CDUP\r\n"
+	
+	#make sure the socket is created.
+	if not isinstance(s, socket.socket):
+		return
+	
+	command = "CDUP\r\n"
 	try:
-		s.send(standard_cmd)
+		s.send(command)
 		response = s.recv(SOCKET_RECEIVE_LENGTH)
 	except:
+		print("[-] Network error!")
 		return
 		
 	if response[0] == "2":
 		print("[+] CDUP is available.\n")
 		time.sleep(1.0)
 
-		print("[*] Generating mutate data...")
-		##############################
-		mutate.buffer_overflow(standard_cmd, seed, amount)
-		mutate_cmd = mutate.bit_flip(standard_cmd, seed, amount)
+		print("[*] Generating mutated data...")
+
+		bit_flip_cmd = mutate.bit_flip("CDUP", command, seed, amount)
+		buffer_overflow_cmd = mutate.buffer_overflow("CDUP", command, seed, amount)
+		format_string_cmd = mutate.format_string("CDUP", command, seed, amount)
 		
 		print("[*] Start fuzzing.Current seed value is %d." %seed)
 		time.sleep(1.0)
 		
-		count = 0
-		for cmd in mutate_cmd:
-			try:
-				print("[*] [Case %d] Mutate method: flip bit..." %count)
-				s.send(cmd + "\r\n")
-				response = s.recv(SOCKET_RECEIVE_LENGTH)
-				time.sleep(SLEEP_TIME)
-				count += 1
-			except socket.timeout:
-				#if no response is received in SOCKET_TIME_OUT,
-				#we consider that the host has crashed.
-				print("[-] Host has crashed!")
+		fuzz(s, "bit_flip", bit_flip_cmd, seed, amount)
+		fuzz(s, "buffer_overflow", buffer_overflow_cmd, seed, amount)
+		fuzz(s, "format_string", format_string_cmd, seed, amount)
 	else:
 		print("CDUP is unavailable.")
+		return
 
 
-def CWD(hostname, port, username, password, seed, amount):
-	try:
-		s = login(hostname, port, username, password)
-		standard_cmd = "CWD /\r\n"
-		s.send(standard_cmd)
-		response = s.recv(SOCKET_RECEIVE_LENGTH)
-	except:
-		print("[-] Network error!")
+def fuzz(s, mode, commands, seed, amount):
+	count = 0
+	for command in commands:
+		try:
+			print("[*] [Case %d] Mutate method: %s..." %(count, mode))
+			s.send(command + "\r\n")
+			response = s.recv(SOCKET_RECEIVE_LENGTH)
+			time.sleep(SLEEP_TIME)
+			count += 1
+		except socket.timeout:
+			#if no response is received in SOCKET_TIME_OUT,
+			#we consider that the host has crashed.
+			print("[-] Host has crashed!")
+			
+			#catch current mutated socket
+			now = time.strftime("%Y-%m-%d_%H-%M-%S", time.localtime())
+			filename = "crashes/" + mode + "_" + now + ".txt"
+			file = open(filename, "w")
+			file.write(command)
+			file.close()
+			
+			time.sleep(SLEEP_TIME)
+			count += 1
+			continue
+		except socket.error:
+			print("[-] Network error!")
+			return
