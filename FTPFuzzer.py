@@ -47,6 +47,8 @@ def main():
 	args = parser.parse_args()
 
 	command.CDUP(args.hostname, args.port, args.username, args.password, args.seed, args.amount)
+	command.CWD(args.hostname, args.port, args.username, args.password, args.seed, args.amount)
+	
 	sys.exit()
 
 

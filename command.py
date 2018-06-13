@@ -21,7 +21,7 @@ import mutate
 
 SOCKET_TIME_OUT = 2
 SOCKET_RECEIVE_LENGTH = 1024
-SLEEP_TIME = 0.0
+SLEEP_TIME = 0.1
 
 
 def login(hostname, port, username, password):
@@ -32,6 +32,7 @@ def login(hostname, port, username, password):
 		response = s.recv(SOCKET_RECEIVE_LENGTH)
 	except:
 		print("[-] Connect error!")
+		s.close()
 		return
 	
 	try:
@@ -42,6 +43,7 @@ def login(hostname, port, username, password):
 		return s
 	except:
 		print("[-] Login failed!")
+		s.close()
 		return
 
 
@@ -50,38 +52,92 @@ def CDUP(hostname, port, username, password, seed, amount):
 	
 	#make sure the socket is created.
 	if not isinstance(s, socket.socket):
+		s.close()
 		return
 	
-	command = "CDUP\r\n"
+	commands = ["CDUP\r\n"]
 	try:
-		s.send(command)
+		s.send(commands[0])
 		response = s.recv(SOCKET_RECEIVE_LENGTH)
 	except:
 		print("[-] Network error!")
+		s.close()
 		return
 		
 	if response[0] == "2":
-		print("[+] CDUP is available.\n")
-		time.sleep(1.0)
+		print("[+] CDUP is available.")
+		time.sleep(SLEEP_TIME * 10)
 
-		print("[*] Generating mutated data...")
+		for command in commands:
+			print("[*] Generating mutated data...")
 
-		bit_flip_cmd = mutate.bit_flip("CDUP", command, seed, amount)
-		buffer_overflow_cmd = mutate.buffer_overflow("CDUP", command, seed, amount)
-		format_string_cmd = mutate.format_string("CDUP", command, seed, amount)
+			bit_flip_cmd = mutate.bit_flip("CDUP", command, seed, amount)
+			buffer_overflow_cmd = mutate.buffer_overflow("CDUP", command, seed, amount)
+			format_string_cmd = mutate.format_string("CDUP", command, seed, amount)
 		
-		print("[*] Start fuzzing.Current seed value is %d." %seed)
-		time.sleep(1.0)
+			print("[*] Start fuzzing.Seed value is %d." %seed)
+			time.sleep(SLEEP_TIME * 10)
 		
-		fuzz(s, "bit_flip", bit_flip_cmd, seed, amount)
-		fuzz(s, "buffer_overflow", buffer_overflow_cmd, seed, amount)
-		fuzz(s, "format_string", format_string_cmd, seed, amount)
+			fuzz(s, "bit_flip", bit_flip_cmd)
+			fuzz(s, "buffer_overflow", buffer_overflow_cmd)
+			fuzz(s, "format_string", format_string_cmd)
+
+		s.close()
+	
 	else:
 		print("CDUP is unavailable.")
+		time.sleep(SLEEP_TIME * 10)
+
+		s.close()
 		return
 
 
-def fuzz(s, mode, commands, seed, amount):
+def CWD(hostname, port, username, password, seed, amount):
+	s = login(hostname, port, username, password)
+	
+	#make sure the socket is created.
+	if not isinstance(s, socket.socket):
+		s.close()
+		return
+	
+	commands = ["CWD /\r\n", "CWD ..\r\n"]
+	try:
+		s.send(commands[0])
+		response = s.recv(SOCKET_RECEIVE_LENGTH)
+	except:
+		print("[-] Network error!")
+		s.close()
+		return
+		
+	if response[0] == "2":
+		print("[+] CWD is available.")
+		time.sleep(SLEEP_TIME * 10)
+
+		for command in commands:
+			print("[*] Generating mutated data...")
+
+			bit_flip_cmd = mutate.bit_flip("CWD", command, seed, amount)
+			buffer_overflow_cmd = mutate.buffer_overflow("CWD", command, seed, amount)
+			format_string_cmd = mutate.format_string("CWD", command, seed, amount)
+		
+			print("[*] Start fuzzing.Seed value is %d." %seed)
+			time.sleep(SLEEP_TIME * 10)
+		
+			fuzz(s, "bit_flip", bit_flip_cmd)
+			fuzz(s, "buffer_overflow", buffer_overflow_cmd)
+			fuzz(s, "format_string", format_string_cmd)
+
+		s.close()
+
+	else:
+		print("CWD is unavailable.")
+		time.sleep(SLEEP_TIME * 10)
+
+		s.close()
+		return
+
+
+def fuzz(s, mode, commands):
 	count = 0
 	for command in commands:
 		try:
@@ -107,4 +163,5 @@ def fuzz(s, mode, commands, seed, amount):
 			continue
 		except socket.error:
 			print("[-] Network error!")
+			s.close()
 			return

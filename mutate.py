@@ -109,3 +109,7 @@ def mutate_parser(COMMAND, command, seed, amount):
 
 def mutate_end(COMMAND, command, seed, amount):
 	pass
+
+
+def escape_string(COMMAND, command, seed, amount):
+	pass
