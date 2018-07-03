@@ -52,7 +52,6 @@ def CDUP(hostname, port, username, password, seed, amount):
 	
 	#make sure the socket is created.
 	if not isinstance(s, socket.socket):
-		s.close()
 		return
 	
 	commands = ["CDUP\r\n"]
@@ -64,7 +63,7 @@ def CDUP(hostname, port, username, password, seed, amount):
 		s.close()
 		return
 		
-	if response[0] == "2":
+	if response[0 : 3] == "250":
 		print("[+] CDUP is available.")
 		time.sleep(SLEEP_TIME * 10)
 
@@ -78,9 +77,9 @@ def CDUP(hostname, port, username, password, seed, amount):
 			print("[*] Start fuzzing.Seed value is %d." %seed)
 			time.sleep(SLEEP_TIME * 10)
 		
-			fuzz(s, "bit_flip", bit_flip_cmd)
-			fuzz(s, "buffer_overflow", buffer_overflow_cmd)
-			fuzz(s, "format_string", format_string_cmd)
+			fuzz(s, hostname, "bit_flip", bit_flip_cmd)
+			fuzz(s, hostname, "buffer_overflow", buffer_overflow_cmd)
+			fuzz(s, hostname, "format_string", format_string_cmd)
 
 		s.close()
 	
@@ -97,7 +96,6 @@ def CWD(hostname, port, username, password, seed, amount):
 	
 	#make sure the socket is created.
 	if not isinstance(s, socket.socket):
-		s.close()
 		return
 	
 	commands = ["CWD /\r\n", "CWD ..\r\n"]
@@ -109,7 +107,7 @@ def CWD(hostname, port, username, password, seed, amount):
 		s.close()
 		return
 		
-	if response[0] == "2":
+	if response[0 : 3] == "250":
 		print("[+] CWD is available.")
 		time.sleep(SLEEP_TIME * 10)
 
@@ -119,13 +117,15 @@ def CWD(hostname, port, username, password, seed, amount):
 			bit_flip_cmd = mutate.bit_flip("CWD", command, seed, amount)
 			buffer_overflow_cmd = mutate.buffer_overflow("CWD", command, seed, amount)
 			format_string_cmd = mutate.format_string("CWD", command, seed, amount)
+			mutate_space_cmd = mutate.mutate_space("CWD", command)
 		
 			print("[*] Start fuzzing.Seed value is %d." %seed)
 			time.sleep(SLEEP_TIME * 10)
 		
-			fuzz(s, "bit_flip", bit_flip_cmd)
-			fuzz(s, "buffer_overflow", buffer_overflow_cmd)
-			fuzz(s, "format_string", format_string_cmd)
+			fuzz(s, hostname, "bit_flip", bit_flip_cmd)
+			fuzz(s, hostname, "buffer_overflow", buffer_overflow_cmd)
+			fuzz(s, hostname, "format_string", format_string_cmd)
+			fuzz(s, hostname, "mutate_space", mutate_space_cmd)
 
 		s.close()
 
@@ -137,12 +137,17 @@ def CWD(hostname, port, username, password, seed, amount):
 		return
 
 
-def fuzz(s, mode, commands):
+def fuzz(s, hostname, mode, commands):
 	count = 0
 	for command in commands:
 		try:
 			print("[*] [Case %d] Mutate method: %s..." %(count, mode))
-			s.send(command + "\r\n")
+			
+			if (command[len(command) - 2 : len(command)] != "\r\n"):
+				s.send(command + "\r\n")
+			else:
+				s.send(command)
+			
 			response = s.recv(SOCKET_RECEIVE_LENGTH)
 			time.sleep(SLEEP_TIME)
 			count += 1
@@ -153,7 +158,7 @@ def fuzz(s, mode, commands):
 			
 			#catch current mutated socket
 			now = time.strftime("%Y-%m-%d_%H-%M-%S", time.localtime())
-			filename = "crashes/" + mode + "_" + now + ".txt"
+			filename = "crashes/" + hostname + "_" + mode + "_" + now + ".txt"
 			file = open(filename, "w")
 			file.write(command)
 			file.close()

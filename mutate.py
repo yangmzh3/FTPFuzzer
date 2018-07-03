@@ -94,12 +94,20 @@ def format_string(COMMAND, command, seed, amount):
 	return format_string_cmd
 
 
-def mutate_space(COMMAND, command, seed, amount):
-	pass
+def mutate_space(COMMAND, command):
+	tail = command[len(COMMAND) + 1 :]
+	mutate_space_cmd = []
+
+	char = 0
+	while char < 32:
+		mutate_space_cmd.append(COMMAND + chr(char) + tail)
+		char += 1
+	mutate_space_cmd.append(COMMAND + chr(127) + tail)
+
+	return mutate_space_cmd
 
 
 def number(COMMAND, command, seed, amount):
-	#not sure
 	pass
 
 
