@@ -21,7 +21,7 @@ import mutate
 
 SOCKET_TIME_OUT = 2
 SOCKET_RECEIVE_LENGTH = 1024
-SLEEP_TIME = 0.1
+SLEEP_TIME = 0.01
 
 
 def login(hostname, port, username, password):
@@ -65,7 +65,6 @@ def CDUP(hostname, port, username, password, seed, amount):
 		
 	if response[0 : 3] == "250":
 		print("[+] CDUP is available.")
-		time.sleep(SLEEP_TIME * 10)
 
 		for command in commands:
 			print("[*] Generating mutated data...")
@@ -109,7 +108,6 @@ def CWD(hostname, port, username, password, seed, amount):
 		
 	if response[0 : 3] == "250":
 		print("[+] CWD is available.")
-		time.sleep(SLEEP_TIME * 10)
 
 		for command in commands:
 			print("[*] Generating mutated data...")
@@ -143,6 +141,7 @@ def fuzz(s, hostname, mode, commands):
 		try:
 			print("[*] [Case %d] Mutate method: %s..." %(count, mode))
 			
+			#make sure the command ends with "\r\n"
 			if (command[len(command) - 2 : len(command)] != "\r\n"):
 				s.send(command + "\r\n")
 			else:
