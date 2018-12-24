@@ -1,2 +1,2 @@
 # FTPFuzzer
-A FTP fuzzer using neural fuzzing tech
+FTPFuzzer is a scalable ramdom FTP fuzzer.
